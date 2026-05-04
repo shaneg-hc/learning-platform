@@ -1,0 +1,59 @@
+import { gql } from '@/lib/graphql';
+import { getAssociation } from '@/lib/associations';
+import DomainCarousel, { type DomainData } from '@/components/explore/DomainCarousel';
+
+const EXPLORE_QUERY = `
+  query Explore($product: String!) {
+    domains(productSlug: $product) {
+      name
+      title
+      shortdesc
+      children {
+        name
+        title
+        shortdesc
+        readtime
+        total
+      }
+    }
+  }
+`;
+
+export default async function ExplorePage({
+  params,
+}: {
+  params: Promise<{ product: string }>;
+}) {
+  const { product } = await params;
+  const association = await getAssociation();
+
+  const data = await gql<{ domains: DomainData[] }>(
+    EXPLORE_QUERY,
+    { product },
+    association,
+  );
+
+  return (
+    <main className="min-h-screen bg-[var(--brand-background)]">
+      <header
+        className="px-8 py-10 text-white"
+        style={{
+          background:
+            'var(--brand-header-gradient)',
+        }}
+      >
+        <p className="text-sm font-medium uppercase tracking-widest text-white/60">
+          {product}
+        </p>
+        <h1 className="mt-1 text-3xl font-bold">Explore</h1>
+        <p className="mt-1 text-sm text-white/75">Browse all learning domains</p>
+      </header>
+
+      <div className="px-8 py-8 space-y-10">
+        {data.domains.map((domain) => (
+          <DomainCarousel key={domain.name} product={product} domain={domain} />
+        ))}
+      </div>
+    </main>
+  );
+}
