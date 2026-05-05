@@ -105,12 +105,20 @@ export default async function ExplorePage({
             <h1 className="mt-1 text-3xl font-bold">Explore</h1>
             <p className="mt-1 text-sm text-white/75">Browse all learning domains</p>
           </div>
-          <Link
-            href={`/${product}/glossary`}
-            className="mt-1 inline-flex items-center gap-1.5 rounded-lg border border-white/30 px-3 py-1.5 text-xs font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
-          >
-            <span>📖</span> Glossary
-          </Link>
+          <div className="flex gap-2">
+            <Link
+              href={`/${product}/resources`}
+              className="mt-1 inline-flex items-center gap-1.5 rounded-lg border border-white/30 px-3 py-1.5 text-xs font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+            >
+              <span>📚</span> Resources
+            </Link>
+            <Link
+              href={`/${product}/glossary`}
+              className="mt-1 inline-flex items-center gap-1.5 rounded-lg border border-white/30 px-3 py-1.5 text-xs font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+            >
+              <span>📖</span> Glossary
+            </Link>
+          </div>
         </div>
       </header>
       {hero && <HeroSection hero={hero} />}
