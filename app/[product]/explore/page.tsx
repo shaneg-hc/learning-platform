@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { gql } from '@/lib/graphql';
 import { getAssociation } from '@/lib/associations';
 import DomainCarousel, { type DomainData } from '@/components/explore/DomainCarousel';
+import HeroSection, { type HeroContent } from '@/components/cms/HeroSection';
 
 const EXPLORE_QUERY = `
   query Explore($product: String!) {
@@ -20,6 +21,20 @@ const EXPLORE_QUERY = `
   }
 `;
 
+const HERO_QUERY = `
+  query HeroContent($association: String!, $product: String!) {
+    heroContent(associationSlug: $association, productSlug: $product) {
+      title
+      subtitle
+      body
+      backgroundImageUrl
+      backgroundImageAlt
+      backgroundImageWidth
+      backgroundImageHeight
+    }
+  }
+`;
+
 export default async function ExplorePage({
   params,
 }: {
@@ -28,20 +43,22 @@ export default async function ExplorePage({
   const { product } = await params;
   const association = await getAssociation();
 
-  const data = await gql<{ domains: DomainData[] }>(
-    EXPLORE_QUERY,
-    { product },
-    association,
-  );
+  const [domainsData, heroData] = await Promise.all([
+    gql<{ domains: DomainData[] }>(EXPLORE_QUERY, { product }, association),
+    gql<{ heroContent: HeroContent | null }>(
+      HERO_QUERY,
+      { association, product },
+      association,
+    ).catch(() => ({ heroContent: null })),
+  ]);
+
+  const hero = heroData.heroContent;
 
   return (
     <main className="min-h-screen bg-[var(--brand-background)]">
       <header
         className="px-8 py-10 text-white"
-        style={{
-          background:
-            'var(--brand-header-gradient)',
-        }}
+        style={{ background: 'var(--brand-header-gradient)' }}
       >
         <div className="flex items-start justify-between">
           <div>
@@ -59,9 +76,10 @@ export default async function ExplorePage({
           </Link>
         </div>
       </header>
+      {hero && <HeroSection hero={hero} />}
 
       <div className="px-8 py-8 space-y-10">
-        {data.domains.map((domain) => (
+        {domainsData.domains.map((domain) => (
           <DomainCarousel key={domain.name} product={product} domain={domain} />
         ))}
       </div>
