@@ -1,4 +1,4 @@
-import StudyPlanCarousel from '@/components/cms/StudyPlanCarousel';
+import type { ReactNode } from 'react';
 
 export type HeroContent = {
   title: string;
@@ -10,7 +10,13 @@ export type HeroContent = {
   backgroundImageHeight: number | null;
 };
 
-export default function HeroSection({ hero }: { hero: HeroContent }) {
+export default function HeroSection({
+  hero,
+  studyPlanSlot,
+}: {
+  hero: HeroContent;
+  studyPlanSlot?: ReactNode;
+}) {
   return (
     <section
       className="relative px-8 py-10 text-white"
@@ -34,9 +40,11 @@ export default function HeroSection({ hero }: { hero: HeroContent }) {
           <p className="mt-3 text-sm text-white/70 leading-relaxed">{hero.body}</p>
         )}
       </div>
-      <div className="relative mt-8">
-        <StudyPlanCarousel />
-      </div>
+      {studyPlanSlot && (
+        <div className="relative mt-8">
+          {studyPlanSlot}
+        </div>
+      )}
     </section>
   );
 }

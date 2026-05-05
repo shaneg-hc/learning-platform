@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { currentUser } from '@clerk/nextjs/server';
 import { gql } from '@/lib/graphql';
 import { getAssociation } from '@/lib/associations';
 import QuizPlayer, { type QuizData } from '@/components/quiz/QuizPlayer';
@@ -17,6 +18,7 @@ const QUIZ_QUERY = `
       timeLimit
       questions {
         id
+        contentId
         type
         stem
         feedback
@@ -24,6 +26,7 @@ const QUIZ_QUERY = `
         points
         choices {
           id
+          contentId
           text
           correct
         }
@@ -48,12 +51,13 @@ export default async function QuizPage({
   }>;
 }) {
   const { product, domain, tgf, quizName } = await params;
-  const association = await getAssociation();
+  const [association, user] = await Promise.all([getAssociation(), currentUser()]);
 
   const data = await gql<{ quiz: QuizData | null; tgf: TGFMeta | null }>(
     QUIZ_QUERY,
     { product, domain, tgf, quizName },
     association,
+    user?.id,
   );
 
   const quiz = data.quiz;
@@ -95,7 +99,14 @@ export default async function QuizPage({
 
       <div className="px-8 py-8">
         {quiz ? (
-          <QuizPlayer quiz={quiz} />
+          <QuizPlayer
+            quiz={quiz}
+            product={product}
+            domain={domain}
+            tgf={tgf}
+            association={association}
+            userId={user?.id ?? null}
+          />
         ) : (
           <p className="text-gray-400 italic max-w-2xl mx-auto">
             Quiz not found.

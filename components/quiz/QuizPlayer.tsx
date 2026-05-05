@@ -1,15 +1,18 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export type Choice = {
   id: string;
+  contentId: number;
   text: string;
   correct: boolean;
 };
 
 export type Question = {
   id: string;
+  contentId: number;
   type: string;
   stem: string;
   feedback: string | null;
@@ -26,58 +29,108 @@ export type QuizData = {
   questions: Question[];
 };
 
-type Phase = 'answering' | 'answered' | 'complete';
+type Answer = {
+  questionContentId: number;
+  portalType: string;
+  isCorrect: boolean;
+  points: number;
+  possiblePoints: number;
+};
 
-export default function QuizPlayer({ quiz }: { quiz: QuizData }) {
+const SUBMIT_MUTATION = `
+  mutation SubmitQuiz($product: String!, $quizName: String!, $answers: [QuizAnswerInput!]!) {
+    submitQuiz(productSlug: $product, quizName: $quizName, answers: $answers) {
+      attemptId
+      percent
+      passed
+      passThreshold
+      correctCount
+      totalQuestions
+    }
+  }
+`;
+
+type Phase = 'answering' | 'answered' | 'submitting' | 'complete';
+
+export default function QuizPlayer({
+  quiz,
+  product,
+  domain,
+  tgf,
+  association,
+  userId,
+}: {
+  quiz: QuizData;
+  product: string;
+  domain: string;
+  tgf: string;
+  association: string;
+  userId: string | null;
+}) {
+  const router = useRouter();
   const [questionIndex, setQuestionIndex] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>('answering');
   const [correctCount, setCorrectCount] = useState(0);
+  const [answers, setAnswers] = useState<Answer[]>([]);
 
-  const { questions, passThreshold } = quiz;
+  const { questions } = quiz;
   const question = questions[questionIndex];
   const isLast = questionIndex === questions.length - 1;
 
   function handleSubmit() {
     const choice = question.choices.find((c) => c.id === selectedId);
-    if (choice?.correct) setCorrectCount((n) => n + 1);
+    const isCorrect = choice?.correct ?? false;
+    if (isCorrect) setCorrectCount((n) => n + 1);
+    setAnswers((prev) => [
+      ...prev,
+      {
+        questionContentId: question.contentId,
+        portalType: question.type,
+        isCorrect,
+        points: question.points,
+        possiblePoints: question.points,
+      },
+    ]);
     setPhase('answered');
   }
 
-  function handleNext() {
-    if (isLast) {
-      setPhase('complete');
-    } else {
+  async function handleNext() {
+    if (!isLast) {
       setQuestionIndex((i) => i + 1);
       setSelectedId(null);
       setPhase('answering');
+      return;
     }
+
+    setPhase('submitting');
+
+    if (userId) {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8001/graphql';
+      try {
+        await fetch(`${apiUrl}?association=${association}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-id': userId,
+          },
+          body: JSON.stringify({
+            query: SUBMIT_MUTATION,
+            variables: { product, quizName: quiz.id, answers },
+          }),
+        });
+      } catch {
+        // Non-critical — redirect anyway
+      }
+    }
+
+    router.push(`/${product}/explore/${domain}/${tgf}/quiz/${quiz.id}/results`);
   }
 
-  if (phase === 'complete') {
-    const pct = Math.round((correctCount / questions.length) * 100);
-    const passed = pct >= passThreshold;
+  if (phase === 'submitting') {
     return (
-      <div className="flex flex-col items-center gap-6 py-16 text-center">
-        <div className="text-5xl">{passed ? '🏆' : '📚'}</div>
-        <h2 className="text-2xl font-bold text-[var(--brand-accent-dark)]">
-          {passed ? 'Well done!' : 'Keep studying'}
-        </h2>
-        <p className="text-4xl font-bold text-[var(--brand-accent)]">{pct}%</p>
-        <p className="text-gray-500">
-          {correctCount} of {questions.length} correct · pass mark {passThreshold}%
-        </p>
-        <button
-          onClick={() => {
-            setQuestionIndex(0);
-            setSelectedId(null);
-            setPhase('answering');
-            setCorrectCount(0);
-          }}
-          className="mt-4 rounded-lg bg-[var(--brand-accent)] px-6 py-3 text-sm font-medium text-white hover:opacity-90 transition-opacity"
-        >
-          Try Again
-        </button>
+      <div className="flex items-center justify-center py-24 text-gray-400">
+        Saving results…
       </div>
     );
   }

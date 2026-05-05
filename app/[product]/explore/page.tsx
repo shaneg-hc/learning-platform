@@ -3,11 +3,13 @@ import UserMenu from '@/components/UserMenu';
 import { currentUser } from '@clerk/nextjs/server';
 import { gql } from '@/lib/graphql';
 import { getAssociation } from '@/lib/associations';
-import DomainCarousel, { type DomainData, type NodeProgressMap } from '@/components/explore/DomainCarousel';
-import HeroSection, { type HeroContent } from '@/components/cms/HeroSection';
+import { type DomainData, type NodeProgressMap } from '@/components/explore/DomainCarousel';
+import StudyPlanManager from '@/components/explore/StudyPlanManager';
+import { type HeroContent } from '@/components/cms/HeroSection';
 import ExploreInstructions, { type ExploreInstructions as ExploreInstructionsType } from '@/components/cms/ExploreInstructions';
 import ToolsForSuccessCarousel, { type ToolCard } from '@/components/cms/ToolsForSuccessCarousel';
 import SeedProgressButton from '@/components/dev/SeedProgressButton';
+import ExamCountdown from '@/components/explore/ExamCountdown';
 
 const EXPLORE_QUERY = `
   query Explore($product: String!) {
@@ -67,6 +69,11 @@ const USER_STATE_QUERY = `
   query UserState($product: String!) {
     userState(productSlug: $product) {
       status
+      quizStatus
+      hasExam
+      examdate
+      hideCountdown
+      studyPlan
     }
   }
 `;
@@ -100,7 +107,7 @@ export default async function ExplorePage({
       association,
       userId,
     ).catch(() => ({ toolCards: [] })),
-    gql<{ userState: { status: Record<string, { data: { percent: number; complete: number; total: number } }> } | null }>(
+    gql<{ userState: { status: Record<string, { data: { percent: number; complete: number; total: number } }> | null; quizStatus: Record<string, unknown> | null; hasExam: boolean | null; examdate: string | null; hideCountdown: boolean | null; studyPlan: string[] | null } | null }>(
       USER_STATE_QUERY,
       { product },
       association,
@@ -120,6 +127,12 @@ export default async function ExplorePage({
       { percent: entry.data.percent, complete: entry.data.complete, total: entry.data.total },
     ]),
   );
+
+  const quizStatus = userStateData.userState?.quizStatus ?? {};
+  const hasExam = userStateData.userState?.hasExam ?? false;
+  const examdate = userStateData.userState?.examdate ?? null;
+  const hideCountdown = userStateData.userState?.hideCountdown ?? false;
+  const initialPins = userStateData.userState?.studyPlan ?? [];
 
   // Dev-only: seed fake progress for the first TGF of each domain
   async function seedTestProgress() {
@@ -158,6 +171,12 @@ export default async function ExplorePage({
           </div>
           <div className="flex items-center gap-2">
             <Link
+              href={`/${product}/settings`}
+              className="mt-1 inline-flex items-center gap-1.5 rounded-lg border border-white/30 px-3 py-1.5 text-xs font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+            >
+              <span>⚙️</span> Settings
+            </Link>
+            <Link
               href={`/${product}/resources`}
               className="mt-1 inline-flex items-center gap-1.5 rounded-lg border border-white/30 px-3 py-1.5 text-xs font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
             >
@@ -169,24 +188,28 @@ export default async function ExplorePage({
             >
               <span>📖</span> Glossary
             </Link>
-            <UserMenu />
+            <UserMenu product={product} />
           </div>
         </div>
       </header>
-      {hero && <HeroSection hero={hero} />}
-      {instructions && <ExploreInstructions instructions={instructions} />}
-
-      {process.env.NODE_ENV === 'development' && (
-        <div className="px-8 pt-4">
-          <SeedProgressButton onSeed={seedTestProgress} />
-        </div>
-      )}
-
-      <div className="px-8 py-8 space-y-10">
-        {domainsData.domains.map((domain) => (
-          <DomainCarousel key={domain.name} product={product} domain={domain} progress={progress} />
-        ))}
-      </div>
+      <ExamCountdown hasExam={hasExam} examdate={examdate} hideCountdown={hideCountdown} />
+      <StudyPlanManager
+        product={product}
+        association={association}
+        userId={userId ?? ''}
+        domains={domainsData.domains}
+        progress={progress}
+        quizStatus={quizStatus}
+        initialPins={initialPins}
+        hero={hero}
+      >
+        {instructions && <ExploreInstructions instructions={instructions} />}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="px-8 pt-4">
+            <SeedProgressButton onSeed={seedTestProgress} />
+          </div>
+        )}
+      </StudyPlanManager>
       <ToolsForSuccessCarousel cards={toolCards} />
     </main>
   );

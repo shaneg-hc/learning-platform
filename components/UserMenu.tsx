@@ -2,7 +2,7 @@
 
 import { UserButton } from '@clerk/nextjs';
 
-export default function UserMenu() {
+export default function UserMenu({ product }: { product?: string }) {
   return (
     <UserButton>
       <UserButton.MenuItems>
@@ -11,6 +11,13 @@ export default function UserMenu() {
           labelIcon={<span>🏠</span>}
           href="/"
         />
+        {product && (
+          <UserButton.Link
+            label="Settings"
+            labelIcon={<span>⚙️</span>}
+            href={`/${product}/settings`}
+          />
+        )}
       </UserButton.MenuItems>
     </UserButton>
   );
