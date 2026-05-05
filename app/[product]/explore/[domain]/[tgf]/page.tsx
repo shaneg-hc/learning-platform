@@ -128,7 +128,7 @@ export default async function TGFPage({
               {group.topics.map((topic) => (
                 <li key={topic.id}>
                   <Link
-                    href={`/${product}/explore/${domain}/${tgf}/${group.id}`}
+                    href={`/${product}/explore/${domain}/${tgf}/${topic.id}`}
                     className="group flex items-start gap-4 rounded-lg bg-white border border-gray-100 px-5 py-4 shadow-sm hover:shadow-md transition-shadow"
                   >
                     <div className="flex-1 min-w-0">
