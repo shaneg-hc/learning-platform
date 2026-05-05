@@ -1,11 +1,13 @@
 import Link from 'next/link';
 import UserMenu from '@/components/UserMenu';
+import { currentUser } from '@clerk/nextjs/server';
 import { gql } from '@/lib/graphql';
 import { getAssociation } from '@/lib/associations';
-import DomainCarousel, { type DomainData } from '@/components/explore/DomainCarousel';
+import DomainCarousel, { type DomainData, type NodeProgressMap } from '@/components/explore/DomainCarousel';
 import HeroSection, { type HeroContent } from '@/components/cms/HeroSection';
 import ExploreInstructions, { type ExploreInstructions as ExploreInstructionsType } from '@/components/cms/ExploreInstructions';
 import ToolsForSuccessCarousel, { type ToolCard } from '@/components/cms/ToolsForSuccessCarousel';
+import SeedProgressButton from '@/components/dev/SeedProgressButton';
 
 const EXPLORE_QUERY = `
   query Explore($product: String!) {
@@ -61,36 +63,84 @@ const TOOL_CARDS_QUERY = `
   }
 `;
 
+const USER_STATE_QUERY = `
+  query UserState($product: String!) {
+    userState(productSlug: $product) {
+      status
+    }
+  }
+`;
+
 export default async function ExplorePage({
   params,
 }: {
   params: Promise<{ product: string }>;
 }) {
   const { product } = await params;
-  const association = await getAssociation();
+  const [association, user] = await Promise.all([getAssociation(), currentUser()]);
+  const userId = user?.id;
 
-  const [domainsData, heroData, instructionsData, toolCardsData] = await Promise.all([
-    gql<{ domains: DomainData[] }>(EXPLORE_QUERY, { product }, association),
+  const [domainsData, heroData, instructionsData, toolCardsData, userStateData] = await Promise.all([
+    gql<{ domains: DomainData[] }>(EXPLORE_QUERY, { product }, association, userId),
     gql<{ heroContent: HeroContent | null }>(
       HERO_QUERY,
       { association, product },
       association,
+      userId,
     ).catch(() => ({ heroContent: null })),
     gql<{ exploreInstructions: ExploreInstructionsType | null }>(
       INSTRUCTIONS_QUERY,
       { association, product },
       association,
+      userId,
     ).catch(() => ({ exploreInstructions: null })),
     gql<{ toolCards: ToolCard[] }>(
       TOOL_CARDS_QUERY,
       { association, product },
       association,
+      userId,
     ).catch(() => ({ toolCards: [] })),
+    gql<{ userState: { status: Record<string, { data: { percent: number; complete: number; total: number } }> } | null }>(
+      USER_STATE_QUERY,
+      { product },
+      association,
+      userId,
+    ).catch(() => ({ userState: null })),
   ]);
 
   const hero = heroData.heroContent;
   const instructions = instructionsData.exploreInstructions;
   const toolCards = toolCardsData.toolCards;
+
+  // Flatten status tree into NodeProgressMap for carousel consumption
+  const rawStatus = userStateData.userState?.status ?? {};
+  const progress: NodeProgressMap = Object.fromEntries(
+    Object.entries(rawStatus).map(([name, entry]) => [
+      name,
+      { percent: entry.data.percent, complete: entry.data.complete, total: entry.data.total },
+    ]),
+  );
+
+  // Dev-only: seed fake progress for the first TGF of each domain
+  async function seedTestProgress() {
+    'use server';
+    if (!userId) return;
+    const firstTgfNames = domainsData.domains.flatMap((d) => d.children.slice(0, 2).map((c) => c.name));
+    const nodeStatus = Object.fromEntries(
+      firstTgfNames.map((name, i) => [
+        name,
+        { data: { total: 10, complete: i === 0 ? 10 : 5, percent: i === 0 ? 100 : 50, readtime: 30, pointscorrect: 0, pointsincorrect: 0 }, next: null, previous: null, parent: null },
+      ]),
+    );
+    await gql(
+      `mutation Seed($product: String!, $input: UserStateInput!) {
+        upsertUserState(productSlug: $product, input: $input) { userId }
+      }`,
+      { product, input: { nodeStatus } },
+      association,
+      userId,
+    ).catch(() => null);
+  }
 
   return (
     <main className="min-h-screen bg-[var(--brand-background)]">
@@ -126,9 +176,15 @@ export default async function ExplorePage({
       {hero && <HeroSection hero={hero} />}
       {instructions && <ExploreInstructions instructions={instructions} />}
 
+      {process.env.NODE_ENV === 'development' && (
+        <div className="px-8 pt-4">
+          <SeedProgressButton onSeed={seedTestProgress} />
+        </div>
+      )}
+
       <div className="px-8 py-8 space-y-10">
         {domainsData.domains.map((domain) => (
-          <DomainCarousel key={domain.name} product={product} domain={domain} />
+          <DomainCarousel key={domain.name} product={product} domain={domain} progress={progress} />
         ))}
       </div>
       <ToolsForSuccessCarousel cards={toolCards} />
