@@ -4,6 +4,7 @@ import { getAssociation } from '@/lib/associations';
 import DomainCarousel, { type DomainData } from '@/components/explore/DomainCarousel';
 import HeroSection, { type HeroContent } from '@/components/cms/HeroSection';
 import ExploreInstructions, { type ExploreInstructions as ExploreInstructionsType } from '@/components/cms/ExploreInstructions';
+import ToolsForSuccessCarousel, { type ToolCard } from '@/components/cms/ToolsForSuccessCarousel';
 
 const EXPLORE_QUERY = `
   query Explore($product: String!) {
@@ -45,6 +46,20 @@ const INSTRUCTIONS_QUERY = `
   }
 `;
 
+const TOOL_CARDS_QUERY = `
+  query ToolCards($association: String!, $product: String!) {
+    toolCards(associationSlug: $association, productSlug: $product) {
+      id
+      title
+      description
+      buttonLabel
+      buttonUrl
+      imageUrl
+      imageAlt
+    }
+  }
+`;
+
 export default async function ExplorePage({
   params,
 }: {
@@ -53,7 +68,7 @@ export default async function ExplorePage({
   const { product } = await params;
   const association = await getAssociation();
 
-  const [domainsData, heroData, instructionsData] = await Promise.all([
+  const [domainsData, heroData, instructionsData, toolCardsData] = await Promise.all([
     gql<{ domains: DomainData[] }>(EXPLORE_QUERY, { product }, association),
     gql<{ heroContent: HeroContent | null }>(
       HERO_QUERY,
@@ -65,10 +80,16 @@ export default async function ExplorePage({
       { association, product },
       association,
     ).catch(() => ({ exploreInstructions: null })),
+    gql<{ toolCards: ToolCard[] }>(
+      TOOL_CARDS_QUERY,
+      { association, product },
+      association,
+    ).catch(() => ({ toolCards: [] })),
   ]);
 
   const hero = heroData.heroContent;
   const instructions = instructionsData.exploreInstructions;
+  const toolCards = toolCardsData.toolCards;
 
   return (
     <main className="min-h-screen bg-[var(--brand-background)]">
@@ -100,6 +121,7 @@ export default async function ExplorePage({
           <DomainCarousel key={domain.name} product={product} domain={domain} />
         ))}
       </div>
+      <ToolsForSuccessCarousel cards={toolCards} />
     </main>
   );
 }
