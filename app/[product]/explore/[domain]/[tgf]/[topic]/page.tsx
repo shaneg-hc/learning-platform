@@ -1,7 +1,9 @@
 import Link from 'next/link';
+import { currentUser } from '@clerk/nextjs/server';
 import { gql } from '@/lib/graphql';
 import { getAssociation } from '@/lib/associations';
 import DitaRenderer from '@/components/dita/DitaRenderer';
+import TopicViewTracker from '@/components/explore/TopicViewTracker';
 
 const TOPIC_QUERY = `
   query TopicPage($product: String!, $topic: String!) {
@@ -37,12 +39,13 @@ export default async function TopicPage({
   params: Promise<{ product: string; domain: string; tgf: string; topic: string }>;
 }) {
   const { product, domain, tgf, topic } = await params;
-  const association = await getAssociation();
+  const [association, user] = await Promise.all([getAssociation(), currentUser()]);
 
   const data = await gql<{ bookNode: TopicNode | null }>(
     TOPIC_QUERY,
     { product, topic },
     association,
+    user?.id,
   );
 
   const node = data.bookNode;
@@ -58,6 +61,16 @@ export default async function TopicPage({
 
   return (
     <main className="min-h-screen bg-[var(--brand-background)]">
+      {user?.id && (
+        <TopicViewTracker
+          product={product}
+          topic={topic}
+          tgf={tgf}
+          location={`/explore/${domain}/${tgf}/${topic}`}
+          association={association}
+          userId={user.id}
+        />
+      )}
       <header
         className="px-8 py-10 text-white"
         style={{
