@@ -1,5 +1,8 @@
+import { currentUser } from '@clerk/nextjs/server';
+import { redirect } from 'next/navigation';
 import { gql } from '@/lib/graphql';
 import { getAssociation } from '@/lib/associations';
+import { hasProductAccess, type License } from '@/lib/licenses';
 
 const THEME_QUERY = `
   query AssociationTheme($slug: String!) {
@@ -33,10 +36,21 @@ const FALLBACK_THEME: Theme = {
 
 export default async function ProductLayout({
   children,
+  params,
 }: {
   children: React.ReactNode;
+  params: Promise<{ product: string }>;
 }) {
+  const { product } = await params;
   const association = await getAssociation();
+
+  const user = await currentUser();
+  if (!user) redirect('/sign-in');
+
+  const licenses = (user.privateMetadata?.licenses ?? []) as License[];
+  if (!hasProductAccess(licenses, association, product)) {
+    redirect('/access-denied');
+  }
 
   let theme = FALLBACK_THEME;
   try {
