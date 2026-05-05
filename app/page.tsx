@@ -1,6 +1,7 @@
 import { currentUser } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import UserMenu from '@/components/UserMenu';
 import { getAssociation } from '@/lib/associations';
 import { getProductsForAssociation, type License } from '@/lib/licenses';
 import { gql } from '@/lib/graphql';
@@ -69,7 +70,7 @@ export default async function DashboardPage() {
       className="min-h-screen bg-[var(--brand-background)]"
     >
       <header
-        className="px-8 py-10 text-white"
+        className="relative px-8 py-10 text-white"
         style={{ background: 'var(--brand-header-gradient)' }}
       >
         <p className="text-sm font-medium uppercase tracking-widest text-white/60">
@@ -77,6 +78,9 @@ export default async function DashboardPage() {
         </p>
         <h1 className="mt-1 text-3xl font-bold">My Products</h1>
         <p className="mt-1 text-sm text-white/75">Select a product to continue</p>
+        <div className="absolute top-8 right-8">
+          <UserMenu />
+        </div>
       </header>
 
       <div className="px-8 py-8 max-w-2xl">
