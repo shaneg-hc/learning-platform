@@ -3,6 +3,7 @@ import { gql } from '@/lib/graphql';
 import { getAssociation } from '@/lib/associations';
 import DomainCarousel, { type DomainData } from '@/components/explore/DomainCarousel';
 import HeroSection, { type HeroContent } from '@/components/cms/HeroSection';
+import ExploreInstructions, { type ExploreInstructions as ExploreInstructionsType } from '@/components/cms/ExploreInstructions';
 
 const EXPLORE_QUERY = `
   query Explore($product: String!) {
@@ -35,6 +36,15 @@ const HERO_QUERY = `
   }
 `;
 
+const INSTRUCTIONS_QUERY = `
+  query ExploreInstructions($association: String!, $product: String!) {
+    exploreInstructions(associationSlug: $association, productSlug: $product) {
+      heading
+      content
+    }
+  }
+`;
+
 export default async function ExplorePage({
   params,
 }: {
@@ -43,16 +53,22 @@ export default async function ExplorePage({
   const { product } = await params;
   const association = await getAssociation();
 
-  const [domainsData, heroData] = await Promise.all([
+  const [domainsData, heroData, instructionsData] = await Promise.all([
     gql<{ domains: DomainData[] }>(EXPLORE_QUERY, { product }, association),
     gql<{ heroContent: HeroContent | null }>(
       HERO_QUERY,
       { association, product },
       association,
     ).catch(() => ({ heroContent: null })),
+    gql<{ exploreInstructions: ExploreInstructionsType | null }>(
+      INSTRUCTIONS_QUERY,
+      { association, product },
+      association,
+    ).catch(() => ({ exploreInstructions: null })),
   ]);
 
   const hero = heroData.heroContent;
+  const instructions = instructionsData.exploreInstructions;
 
   return (
     <main className="min-h-screen bg-[var(--brand-background)]">
@@ -77,6 +93,7 @@ export default async function ExplorePage({
         </div>
       </header>
       {hero && <HeroSection hero={hero} />}
+      {instructions && <ExploreInstructions instructions={instructions} />}
 
       <div className="px-8 py-8 space-y-10">
         {domainsData.domains.map((domain) => (
