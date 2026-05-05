@@ -7,6 +7,7 @@ export type License = {
 // Add new entries here as products are onboarded.
 const LICENSE_KEY_TO_PRODUCT_SLUG: Record<string, string> = {
   shrmcps: 'shrmcps1',
+  cpscp: 'cpscp1',
 };
 
 export function licenseKeyToSlug(key: string): string {
