@@ -13,7 +13,7 @@ export type HeroContent = {
 export default function HeroSection({ hero }: { hero: HeroContent }) {
   return (
     <section
-      className="relative px-8 py-10 text-white overflow-hidden"
+      className="relative px-8 py-10 text-white"
       style={{ background: 'var(--brand-accent)' }}
     >
       {hero.backgroundImageUrl && (

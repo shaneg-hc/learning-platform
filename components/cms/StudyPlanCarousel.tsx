@@ -37,7 +37,7 @@ export default function StudyPlanCarousel() {
       <h2 className="text-sm font-semibold uppercase tracking-widest text-white/60 mb-3 text-center">
         My Study Plan
       </h2>
-      <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden justify-center">
+      <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {PLACEHOLDER_CARDS.map((card) => (
           <div
             key={card.id}
