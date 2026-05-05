@@ -8,6 +8,8 @@ const TGF_QUERY = `
       name
       title
       shortdesc
+      quizNames
+      hasFlashcards
       groups {
         id
         title
@@ -39,6 +41,8 @@ type TGFOutline = {
   name: string;
   title: string | null;
   shortdesc: string | null;
+  quizNames: string[];
+  hasFlashcards: boolean;
   groups: TopicGroup[];
 };
 
@@ -89,6 +93,28 @@ export default async function TGFPage({
           </p>
         )}
       </header>
+
+      {(outline.hasFlashcards || outline.quizNames.length > 0) && (
+        <div className="px-8 py-4 max-w-4xl flex flex-wrap gap-3 border-b border-gray-100">
+          {outline.hasFlashcards && (
+            <Link
+              href={`/${product}/explore/${domain}/${tgf}/flashcards`}
+              className="inline-flex items-center gap-2 rounded-lg border border-[var(--brand-accent)] px-4 py-2 text-sm font-medium text-[var(--brand-accent)] hover:bg-[var(--brand-accent-light)] transition-colors"
+            >
+              <span>🃏</span> Practice Flashcards
+            </Link>
+          )}
+          {outline.quizNames.map((quizName) => (
+            <Link
+              key={quizName}
+              href={`/${product}/explore/${domain}/${tgf}/quiz/${quizName}`}
+              className="inline-flex items-center gap-2 rounded-lg bg-[var(--brand-accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+            >
+              <span>✏️</span> Take Quiz
+            </Link>
+          ))}
+        </div>
+      )}
 
       <div className="px-8 py-8 space-y-8 max-w-4xl">
         {outline.groups.map((group) => (
