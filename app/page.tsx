@@ -2,8 +2,9 @@ import { currentUser } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import UserMenu from '@/components/UserMenu';
+import OrgSwitcher from '@/components/OrgSwitcher';
 import { getAssociation } from '@/lib/associations';
-import { getProductsForAssociation, type License } from '@/lib/licenses';
+import { getProducts } from '@/lib/licenses';
 import { gql } from '@/lib/graphql';
 
 const ASSOCIATION_QUERY = `
@@ -37,8 +38,7 @@ export default async function DashboardPage() {
   if (!user) redirect('/sign-in');
 
   const association = await getAssociation();
-  const licenses = (user.privateMetadata?.licenses ?? []) as License[];
-  const products = getProductsForAssociation(licenses, association);
+  const products = getProducts(user.privateMetadata as Record<string, unknown>, association);
 
   if (products.length === 0) {
     redirect('/access-denied');
@@ -78,7 +78,8 @@ export default async function DashboardPage() {
         </p>
         <h1 className="mt-1 text-3xl font-bold">My Products</h1>
         <p className="mt-1 text-sm text-white/75">Select a product to continue</p>
-        <div className="absolute top-8 right-8">
+        <div className="absolute top-8 right-8 flex items-center gap-3">
+          <OrgSwitcher />
           <UserMenu />
         </div>
       </header>
