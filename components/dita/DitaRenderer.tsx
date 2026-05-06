@@ -8,6 +8,7 @@
  *   widget(hero_content)       → scenario story (image + paragraphs)
  *   widget(verticalAccordion)  → collapsible accordion panels
  *   widget(horizontalAccordion)→ tabbed accordion panels (rendered same as vertical)
+ *   widget(tab)/widget(pane)   → inline accordion inside a list item
  *
  * Props on ph elements contain icon identifiers, not display text — they are skipped.
  */
@@ -247,25 +248,48 @@ function DitaNode({ node }: { node: DitaChild }) {
       );
 
     case 'li': {
-      // hero_icon_list items have li → p → [ph (icon id), span (label)]
-      // Regular list items also have li → p → text, so check for the ph inside
-      const isIconItem = children.some((c) => {
-        if (typeof c !== 'object' || !('p' in (c as object))) return false;
-        const p = (c as Record<string, unknown>).p as DitaElement | undefined;
-        return (p?.children ?? []).some(
-          (pc) => typeof pc === 'object' && 'ph' in (pc as object),
+      // Detect accordion-in-list: li → p → [ph(widget(tab)), ph(widget(pane))]
+      const pNode = children.find(
+        (c) => typeof c === 'object' && 'p' in (c as object),
+      ) as Record<string, unknown> | undefined;
+      const pEl = pNode?.p as DitaElement | undefined;
+      const pKids = pEl?.children ?? [];
+      const tabPh = pKids.find(
+        (c) => typeof c === 'object' && 'ph' in (c as object) &&
+          widget(((c as Record<string, unknown>).ph as DitaElement)?.attributes) === 'tab',
+      ) as Record<string, unknown> | undefined;
+      const panePh = pKids.find(
+        (c) => typeof c === 'object' && 'ph' in (c as object) &&
+          widget(((c as Record<string, unknown>).ph as DitaElement)?.attributes) === 'pane',
+      ) as Record<string, unknown> | undefined;
+
+      if (tabPh && panePh) {
+        const tabEl = tabPh.ph as DitaElement;
+        const paneEl = panePh.ph as DitaElement;
+        return (
+          <li className="list-none">
+            <details className="group border-b border-gray-100 last:border-0">
+              <summary className="flex cursor-pointer items-center justify-between py-2.5 font-medium text-[var(--brand-accent-dark)] hover:text-[var(--brand-accent)] transition-colors list-none">
+                <span>{extractText({ ph: tabEl } as Record<string, unknown>)}</span>
+                <span className="ml-2 text-[var(--brand-accent)] transition-transform group-open:rotate-180">▾</span>
+              </summary>
+              <div className="py-3 text-gray-700 space-y-2">
+                {renderChildren(paneEl.children ?? [])}
+              </div>
+            </details>
+          </li>
         );
-      });
+      }
+
+      // hero_icon_list items have li → p → [ph (icon id), span (label)]
+      const isIconItem = pKids.some(
+        (pc) => typeof pc === 'object' && 'ph' in (pc as object),
+      ) && pKids.some(
+        (pc) => typeof pc === 'object' && 'span' in (pc as object),
+      );
       if (isIconItem) {
-        const label = children
-          .flatMap((c) => {
-            if (typeof c !== 'object') return [];
-            const p = (c as Record<string, unknown>).p as DitaElement | undefined;
-            if (!p) return [];
-            return (p.children ?? []).filter(
-              (pc) => typeof pc === 'object' && 'span' in (pc as object),
-            );
-          })
+        const label = pKids
+          .filter((pc) => typeof pc === 'object' && 'span' in (pc as object))
           .map((spanNode) => {
             const span = (spanNode as Record<string, unknown>).span;
             if (typeof span === 'string') return span;
