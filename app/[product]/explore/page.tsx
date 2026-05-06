@@ -1,5 +1,4 @@
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
 import { currentUser } from '@clerk/nextjs/server';
 import { gql } from '@/lib/graphql';
 import { getAssociation } from '@/lib/associations';
