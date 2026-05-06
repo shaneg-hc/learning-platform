@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { gql } from '@/lib/graphql';
 import { getAssociation } from '@/lib/associations';
 import { hasProductAccess } from '@/lib/licenses';
+import ProductNav from '@/components/ProductNav';
 
 const THEME_QUERY = `
   query AssociationTheme($slug: String!) {
@@ -72,8 +73,9 @@ export default async function ProductLayout({
         '--brand-background': theme.background,
         '--brand-header-gradient': theme.headerGradient,
       } as React.CSSProperties}
-      className="contents"
+      className="min-h-screen flex flex-col bg-[var(--brand-background)]"
     >
+      <ProductNav product={product} />
       {children}
     </div>
   );

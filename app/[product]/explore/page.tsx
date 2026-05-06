@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import UserMenu from '@/components/UserMenu';
 import { currentUser } from '@clerk/nextjs/server';
 import { gql } from '@/lib/graphql';
 import { getAssociation } from '@/lib/associations';
@@ -170,36 +169,8 @@ export default async function ExplorePage({
         className="px-8 py-10 text-white"
         style={{ background: 'var(--brand-header-gradient)' }}
       >
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-sm font-medium uppercase tracking-widest text-white/60">
-              {product}
-            </p>
-            <h1 className="mt-1 text-3xl font-bold">Explore</h1>
-            <p className="mt-1 text-sm text-white/75">Browse all learning domains</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link
-              href={`/${product}/settings`}
-              className="mt-1 inline-flex items-center gap-1.5 rounded-lg border border-white/30 px-3 py-1.5 text-xs font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
-            >
-              <span>⚙️</span> Settings
-            </Link>
-            <Link
-              href={`/${product}/resources`}
-              className="mt-1 inline-flex items-center gap-1.5 rounded-lg border border-white/30 px-3 py-1.5 text-xs font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
-            >
-              <span>📚</span> Resources
-            </Link>
-            <Link
-              href={`/${product}/glossary`}
-              className="mt-1 inline-flex items-center gap-1.5 rounded-lg border border-white/30 px-3 py-1.5 text-xs font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
-            >
-              <span>📖</span> Glossary
-            </Link>
-            <UserMenu product={product} />
-          </div>
-        </div>
+        <h1 className="text-3xl font-bold">Explore</h1>
+        <p className="mt-1 text-sm text-white/75">Browse all learning domains</p>
       </header>
       <ExamCountdown hasExam={hasExam} examdate={examdate} hideCountdown={hideCountdown} />
       <StudyPlanManager
