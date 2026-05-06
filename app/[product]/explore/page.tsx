@@ -7,7 +7,6 @@ import StudyPlanManager from '@/components/explore/StudyPlanManager';
 import { type HeroContent } from '@/components/cms/HeroSection';
 import ExploreInstructions, { type ExploreInstructions as ExploreInstructionsType } from '@/components/cms/ExploreInstructions';
 import ToolsForSuccessCarousel, { type ToolCard } from '@/components/cms/ToolsForSuccessCarousel';
-import ExamCountdown from '@/components/explore/ExamCountdown';
 
 const EXPLORE_QUERY = `
   query Explore($product: String!) {
@@ -129,9 +128,6 @@ export default async function ExplorePage({
   );
 
   const quizStatus = userStateData.userState?.quizStatus ?? {};
-  const hasExam = userStateData.userState?.hasExam ?? false;
-  const examdate = userStateData.userState?.examdate ?? null;
-  const hideCountdown = userStateData.userState?.hideCountdown ?? false;
   const alwaysResume = userStateData.userState?.alwaysResume ?? false;
   const lastLocation = userStateData.userState?.location ?? null;
 
@@ -149,7 +145,6 @@ export default async function ExplorePage({
         <h1 className="text-3xl font-bold">Explore</h1>
         <p className="mt-1 text-sm text-white/75">Browse all learning domains</p>
       </header>
-      <ExamCountdown hasExam={hasExam} examdate={examdate} hideCountdown={hideCountdown} />
       <StudyPlanManager
         product={product}
         association={association}

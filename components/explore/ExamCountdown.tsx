@@ -15,41 +15,34 @@ export default function ExamCountdown({ hasExam, examdate, hideCountdown }: Prop
   if (!hasExam || hideCountdown || !examdate) return null;
 
   const days = daysUntil(examdate);
-
   if (days < 0) return null;
 
-  let colorClass: string;
-  let urgency: string;
+  let dotClass: string;
   if (days <= 14) {
-    colorClass = 'bg-red-50 border-red-200 text-red-800';
-    urgency = 'Soon';
+    dotClass = 'bg-red-500';
   } else if (days <= 30) {
-    colorClass = 'bg-amber-50 border-amber-200 text-amber-800';
-    urgency = 'Coming up';
+    dotClass = 'bg-amber-400';
   } else {
-    colorClass = 'bg-green-50 border-green-200 text-green-800';
-    urgency = "You've got time";
+    dotClass = 'bg-green-400';
   }
 
   const examFormatted = new Date(examdate + 'T00:00:00').toLocaleDateString('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
+    month: 'long', day: 'numeric', year: 'numeric',
   });
 
+  const tooltip =
+    days === 0 ? `Exam today — ${examFormatted}` :
+    days === 1 ? `Exam tomorrow — ${examFormatted}` :
+    `${days} days until your exam — ${examFormatted}`;
+
   return (
-    <div className={`mx-8 mt-4 flex items-center gap-3 rounded-xl border px-5 py-3.5 ${colorClass}`}>
-      <span className="text-2xl" aria-hidden="true">📅</span>
-      <div className="flex-1">
-        <p className="text-sm font-semibold">
-          {days === 0
-            ? 'Your exam is today!'
-            : days === 1
-            ? 'Your exam is tomorrow!'
-            : `${days} days until your exam`}
-        </p>
-        <p className="text-xs opacity-75">{examFormatted} &mdash; {urgency}</p>
-      </div>
-    </div>
+    <span
+      title={tooltip}
+      aria-label={tooltip}
+      className="relative inline-flex cursor-default rounded-lg px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors items-center gap-2"
+    >
+      <span className={`h-2 w-2 rounded-full ${dotClass}`} />
+      Exam
+    </span>
   );
 }

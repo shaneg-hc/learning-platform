@@ -1,7 +1,16 @@
 import Link from 'next/link';
 import UserMenu from '@/components/UserMenu';
+import ExamCountdown from '@/components/explore/ExamCountdown';
 
-export default function ProductNav({ product }: { product: string }) {
+type ExamState = { hasExam: boolean; examdate: string | null; hideCountdown: boolean };
+
+export default function ProductNav({
+  product,
+  examState,
+}: {
+  product: string;
+  examState?: ExamState;
+}) {
   return (
     <nav className="flex items-center justify-between px-8 py-3 bg-white border-b border-gray-100 shadow-sm">
       <Link
@@ -41,6 +50,13 @@ export default function ProductNav({ product }: { product: string }) {
         >
           Settings
         </Link>
+        {examState && (
+          <ExamCountdown
+            hasExam={examState.hasExam}
+            examdate={examState.examdate}
+            hideCountdown={examState.hideCountdown}
+          />
+        )}
         <div className="ml-2">
           <UserMenu product={product} />
         </div>
