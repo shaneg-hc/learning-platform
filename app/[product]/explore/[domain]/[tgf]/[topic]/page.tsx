@@ -13,6 +13,7 @@ const TOPIC_QUERY = `
       title
       shortdesc
       body
+      quizNames
       nav {
         parent
         next
@@ -20,6 +21,9 @@ const TOPIC_QUERY = `
         firstChild
         data { readtime total }
       }
+    }
+    userState(productSlug: $product) {
+      quizPattern
     }
   }
 `;
@@ -33,6 +37,7 @@ type TopicNode = {
   title: string | null;
   shortdesc: string | null;
   body: Record<string, unknown> | null;
+  quizNames: string[];
   nav: Nav | null;
 };
 
@@ -44,7 +49,7 @@ export default async function TopicPage({
   const { product, domain, tgf, topic } = await params;
   const [association, user] = await Promise.all([getAssociation(), currentUser()]);
 
-  const data = await gql<{ bookNode: TopicNode | null }>(
+  const data = await gql<{ bookNode: TopicNode | null; userState: { quizPattern: string | null } | null }>(
     TOPIC_QUERY,
     { product, topic },
     association,
@@ -52,6 +57,7 @@ export default async function TopicPage({
   );
 
   const node = data.bookNode;
+  const quizPattern = data.userState?.quizPattern ?? 'cp';
   if (!node) {
     return (
       <main className="min-h-screen bg-[var(--brand-background)] flex items-center justify-center">
@@ -107,6 +113,27 @@ export default async function TopicPage({
           !isTopicGroup && <p className="text-gray-400 italic">No content available.</p>
         )}
       </div>
+
+      {isTopicGroup && node.quizNames.filter((n) => n.endsWith(`-${quizPattern}`) || !n.match(/-(cp|scp)$/)).length > 0 && (
+        <div className="px-8 pb-4 max-w-3xl flex flex-wrap gap-3">
+          {node.quizNames.filter((n) => n.endsWith(`-${quizPattern}`) || !n.match(/-(cp|scp)$/)).map((quizName) => (
+            <div key={quizName} className="inline-flex items-center gap-2">
+              <Link
+                href={`/${product}/explore/${domain}/${tgf}/quiz/${quizName}`}
+                className="inline-flex items-center gap-2 rounded-lg bg-[var(--brand-accent)] px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+              >
+                <span>✏️</span> Check Your Understanding
+              </Link>
+              <Link
+                href={`/${product}/explore/${domain}/${tgf}/quiz/${quizName}/results`}
+                className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                Results
+              </Link>
+            </div>
+          ))}
+        </div>
+      )}
 
       {(node.nav?.previous || node.nav?.next) && (
         <nav className="px-8 pb-12 max-w-3xl flex justify-between gap-4">
