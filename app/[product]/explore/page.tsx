@@ -8,7 +8,6 @@ import StudyPlanManager from '@/components/explore/StudyPlanManager';
 import { type HeroContent } from '@/components/cms/HeroSection';
 import ExploreInstructions, { type ExploreInstructions as ExploreInstructionsType } from '@/components/cms/ExploreInstructions';
 import ToolsForSuccessCarousel, { type ToolCard } from '@/components/cms/ToolsForSuccessCarousel';
-import SeedProgressButton from '@/components/dev/SeedProgressButton';
 import ExamCountdown from '@/components/explore/ExamCountdown';
 
 const EXPLORE_QUERY = `
@@ -142,27 +141,6 @@ export default async function ExplorePage({
   }
   const initialPins = userStateData.userState?.studyPlan ?? [];
 
-  // Dev-only: seed fake progress for the first TGF of each domain
-  async function seedTestProgress() {
-    'use server';
-    if (!userId) return;
-    const firstTgfNames = domainsData.domains.flatMap((d) => d.children.slice(0, 2).map((c) => c.name));
-    const nodeStatus = Object.fromEntries(
-      firstTgfNames.map((name, i) => [
-        name,
-        { data: { total: 10, complete: i === 0 ? 10 : 5, percent: i === 0 ? 100 : 50, readtime: 30, pointscorrect: 0, pointsincorrect: 0 }, next: null, previous: null, parent: null },
-      ]),
-    );
-    await gql(
-      `mutation Seed($product: String!, $input: UserStateInput!) {
-        upsertUserState(productSlug: $product, input: $input) { userId }
-      }`,
-      { product, input: { nodeStatus } },
-      association,
-      userId,
-    ).catch(() => null);
-  }
-
   return (
     <main className="min-h-screen bg-[var(--brand-background)]">
       <header
@@ -184,11 +162,6 @@ export default async function ExplorePage({
         hero={hero}
       >
         {instructions && <ExploreInstructions instructions={instructions} />}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="px-8 pt-4">
-            <SeedProgressButton onSeed={seedTestProgress} />
-          </div>
-        )}
       </StudyPlanManager>
       <ToolsForSuccessCarousel cards={toolCards} />
     </main>
