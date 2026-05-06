@@ -20,6 +20,9 @@
 # production
 /build
 
+# CDN assets — symlink or copy of legacy image repo, not tracked here
+/public/cdn
+
 # misc
 .DS_Store
 *.pem

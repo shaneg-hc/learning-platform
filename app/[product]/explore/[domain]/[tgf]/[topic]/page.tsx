@@ -9,6 +9,7 @@ const TOPIC_QUERY = `
   query TopicPage($product: String!, $topic: String!) {
     bookNode(productSlug: $product, nodeName: $topic, includeBody: true) {
       name
+      level
       title
       shortdesc
       body
@@ -16,6 +17,7 @@ const TOPIC_QUERY = `
         parent
         next
         previous
+        firstChild
         data { readtime total }
       }
     }
@@ -23,10 +25,11 @@ const TOPIC_QUERY = `
 `;
 
 type NavData = { readtime: number; total: number };
-type Nav = { parent: string | null; next: string | null; previous: string | null; data: NavData };
+type Nav = { parent: string | null; next: string | null; previous: string | null; firstChild: string | null; data: NavData };
 
 type TopicNode = {
   name: string;
+  level: string;
   title: string | null;
   shortdesc: string | null;
   body: Record<string, unknown> | null;
@@ -57,11 +60,12 @@ export default async function TopicPage({
     );
   }
 
+  const isTopicGroup = node.level === 'TOPIC_GROUP';
   const backHref = `/${product}/explore/${domain}/${tgf}`;
 
   return (
     <main className="min-h-screen bg-[var(--brand-background)]">
-      {user?.id && (
+      {user?.id && !isTopicGroup && (
         <TopicViewTracker
           product={product}
           topic={topic}
@@ -73,10 +77,7 @@ export default async function TopicPage({
       )}
       <header
         className="px-8 py-10 text-white"
-        style={{
-          background:
-            'var(--brand-header-gradient)',
-        }}
+        style={{ background: 'var(--brand-header-gradient)' }}
       >
         <Link
           href={backHref}
@@ -95,7 +96,7 @@ export default async function TopicPage({
       </header>
 
       <div className="px-8 py-8 max-w-3xl">
-        {node.shortdesc && (
+        {node.shortdesc && node.shortdesc !== node.title && (
           <p className="mb-6 text-base text-gray-600 leading-relaxed border-l-4 border-[var(--brand-accent)] pl-4">
             {node.shortdesc}
           </p>
@@ -103,7 +104,7 @@ export default async function TopicPage({
         {node.body ? (
           <DitaRenderer body={node.body} />
         ) : (
-          <p className="text-gray-400 italic">No content available.</p>
+          !isTopicGroup && <p className="text-gray-400 italic">No content available.</p>
         )}
       </div>
 
@@ -117,12 +118,12 @@ export default async function TopicPage({
               ← Previous
             </Link>
           ) : <span />}
-          {node.nav.next ? (
+          {(isTopicGroup ? node.nav.firstChild : node.nav.next) ? (
             <Link
-              href={`/${product}/explore/${domain}/${tgf}/${node.nav.next}`}
+              href={`/${product}/explore/${domain}/${tgf}/${isTopicGroup ? node.nav.firstChild : node.nav.next}`}
               className="text-sm text-[var(--brand-accent)] hover:underline"
             >
-              Next →
+              {isTopicGroup ? 'Start →' : 'Next →'}
             </Link>
           ) : <span />}
         </nav>

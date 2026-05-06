@@ -2,7 +2,6 @@ import Link from 'next/link';
 import { currentUser } from '@clerk/nextjs/server';
 import { gql } from '@/lib/graphql';
 import { getAssociation } from '@/lib/associations';
-
 const TGF_QUERY = `
   query TGFOutline($product: String!, $domain: String!, $tgf: String!) {
     tgf(productSlug: $product, domainName: $domain, tgfName: $tgf) {
@@ -72,6 +71,7 @@ export default async function TGFPage({
   const outline = data.tgf;
   const quizPattern = data.userState?.quizPattern ?? 'cp';
   const topicProgress: TopicProgress = data.userState?.status ?? {};
+
   if (!outline) {
     return (
       <main className="min-h-screen bg-[var(--brand-background)] flex items-center justify-center">
@@ -84,10 +84,7 @@ export default async function TGFPage({
     <main className="min-h-screen bg-[var(--brand-background)]">
       <header
         className="px-8 py-10 text-white"
-        style={{
-          background:
-            'var(--brand-header-gradient)',
-        }}
+        style={{ background: 'var(--brand-header-gradient)' }}
       >
         <Link
           href={`/${product}/explore`}
@@ -136,28 +133,34 @@ export default async function TGFPage({
 
       <div className="px-8 py-8 space-y-8 max-w-4xl">
         {outline.groups.map((group) => {
-          const readCount = group.topics.filter(
+          // topics[0] is the group intro card; topics[1..] are the leaf topics
+          const leafTopics = group.topics.slice(1);
+          const readCount = leafTopics.filter(
             (t) => (topicProgress[t.id]?.data?.percent ?? 0) >= 100,
           ).length;
-          const allRead = readCount === group.topics.length;
+          const allRead = leafTopics.length > 0 && readCount === leafTopics.length;
 
           return (
             <section key={group.id}>
-              {group.title && (
-                <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-3">
+                {group.title ? (
                   <h2 className="text-xs font-semibold uppercase tracking-widest text-[var(--brand-accent)]">
                     {group.title}
                   </h2>
-                  {readCount > 0 && (
-                    <span className={`text-xs font-medium ${allRead ? 'text-green-600' : 'text-gray-400'}`}>
-                      {allRead ? '✓ Complete' : `${readCount} / ${group.topics.length} read`}
-                    </span>
-                  )}
-                </div>
-              )}
+                ) : <span />}
+                {readCount > 0 && (
+                  <span className={`text-xs font-medium ${allRead ? 'text-green-600' : 'text-gray-400'}`}>
+                    {allRead ? '✓ Complete' : `${readCount} / ${leafTopics.length} read`}
+                  </span>
+                )}
+              </div>
+
               <ul className="space-y-2">
-                {group.topics.map((topic) => {
-                  const isRead = (topicProgress[topic.id]?.data?.percent ?? 0) >= 100;
+                {group.topics.map((topic, topicIdx) => {
+                  // Group intro card (index 0) mirrors the group's overall completion
+                  const isRead = topicIdx === 0
+                    ? allRead
+                    : (topicProgress[topic.id]?.data?.percent ?? 0) >= 100;
                   return (
                     <li key={topic.id}>
                       <Link
@@ -166,10 +169,10 @@ export default async function TGFPage({
                       >
                         <div className="flex-1 min-w-0">
                           <p className={`font-medium group-hover:underline ${isRead ? 'text-gray-400' : 'text-[var(--brand-accent-dark)]'}`}>
-                            {topic.title}
+                            {topicIdx === 0 ? 'Introduction' : topic.title}
                             {isRead && <span className="ml-2 text-green-500">✓</span>}
                           </p>
-                          {topic.shortdesc && (
+                          {topicIdx > 0 && topic.shortdesc && (
                             <p className="mt-1 text-sm text-gray-500 line-clamp-2">
                               {topic.shortdesc}
                             </p>
