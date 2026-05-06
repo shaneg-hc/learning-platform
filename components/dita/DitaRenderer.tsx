@@ -347,14 +347,18 @@ function DitaNode({ node }: { node: DitaChild }) {
       return <>{renderChildren(children)}</>;
 
     case 'fig':
-      return <figure className="my-4">{renderChildren(children)}</figure>;
+      return (
+        <figure className={`my-4 ${outputclass === 'float' ? 'float-right ml-6 mb-2' : ''}`}>
+          {renderChildren(children)}
+        </figure>
+      );
 
     case 'image': {
       const src = attrs.src as string | undefined;
       const width = attrs.width as number | undefined;
       if (!src) return null;
       const base = process.env.NEXT_PUBLIC_CDN_BASE_URL?.replace(/\/$/, '') ?? '';
-      const fullSrc = src.startsWith('http') ? src : `${base}/${src}`;
+      const fullSrc = src.startsWith('http') ? src : base ? `${base}/${src.replace(/^\//, '')}` : src;
       const altEl = children.find((c) => typeof c === 'object' && 'alt' in (c as object));
       const altText = altEl ? extractText(altEl) : '';
       return (
@@ -362,7 +366,7 @@ function DitaNode({ node }: { node: DitaChild }) {
         <img
           src={fullSrc}
           alt={altText}
-          className={`rounded max-w-full ${outputclass === 'float' ? 'float-right ml-4 mb-2' : 'my-2'}`}
+          className="rounded max-w-full my-2"
           style={width ? { width } : undefined}
         />
       );
