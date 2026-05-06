@@ -27,6 +27,7 @@ export type QuizData = {
   passThreshold: number;
   showFeedback: boolean;
   questions: Question[];
+  instructions: { title: string; begin: string; done: string; restart: string } | null;
 };
 
 type Answer = {
@@ -60,6 +61,8 @@ export default function QuizPlayer({
   tgf,
   association,
   userId,
+  resultsHref,
+  hideFeedback = false,
 }: {
   quiz: QuizData;
   product: string;
@@ -67,6 +70,8 @@ export default function QuizPlayer({
   tgf: string;
   association: string;
   userId: string | null;
+  resultsHref?: string;
+  hideFeedback?: boolean;
 }) {
   const router = useRouter();
   const [questionIndex, setQuestionIndex] = useState(0);
@@ -126,7 +131,7 @@ export default function QuizPlayer({
       }
     }
 
-    router.push(`/${product}/explore/${domain}/${tgf}/quiz/${quiz.id}/results`);
+    router.push(resultsHref ?? `/${product}/explore/${domain}/${tgf}/quiz/${quiz.id}/results`);
   }
 
   if (phase === 'submitting') {
@@ -145,7 +150,7 @@ export default function QuizPlayer({
       <div>
         <div className="flex justify-between text-xs text-gray-500 mb-1">
           <span>Question {questionIndex + 1} of {questions.length}</span>
-          <span>{correctCount} correct so far</span>
+          {!hideFeedback && <span>{correctCount} correct so far</span>}
         </div>
         <div className="h-1.5 w-full rounded-full bg-gray-100">
           <div
@@ -172,6 +177,10 @@ export default function QuizPlayer({
               selectedId === choice.id
                 ? ' border-[var(--brand-accent)] bg-[var(--brand-accent-light)] font-medium text-[var(--brand-accent-dark)]'
                 : ' border-gray-200 bg-white hover:border-[var(--brand-accent)] hover:bg-[var(--brand-accent-light)]';
+          } else if (hideFeedback) {
+            cls += choice.id === selectedId
+              ? ' border-[var(--brand-accent)] bg-[var(--brand-accent-light)] font-medium text-[var(--brand-accent-dark)] cursor-default'
+              : ' border-gray-100 bg-gray-50 text-gray-400 cursor-default';
           } else {
             if (choice.correct) {
               cls += ' border-green-400 bg-green-50 font-medium text-green-800';
@@ -199,7 +208,7 @@ export default function QuizPlayer({
       </div>
 
       {/* Feedback */}
-      {answered && question.feedback && question.feedback.trim() !== '<div></div>' && (
+      {answered && !hideFeedback && question.feedback && question.feedback.trim() !== '<div></div>' && (
         <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
           <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-blue-500">
             Explanation

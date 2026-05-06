@@ -27,6 +27,12 @@ export default function ProductNav({
           Explore
         </Link>
         <Link
+          href={`/${product}/pretests`}
+          className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+        >
+          Pre-Tests
+        </Link>
+        <Link
           href={`/${product}/quizzes`}
           className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors"
         >
