@@ -353,11 +353,15 @@ function DitaNode({ node }: { node: DitaChild }) {
       const src = attrs.src as string | undefined;
       const width = attrs.width as number | undefined;
       if (!src) return null;
+      const base = process.env.NEXT_PUBLIC_CDN_BASE_URL?.replace(/\/$/, '') ?? '';
+      const fullSrc = src.startsWith('http') ? src : `${base}/${src}`;
+      const altEl = children.find((c) => typeof c === 'object' && 'alt' in (c as object));
+      const altText = altEl ? extractText(altEl) : '';
       return (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={src}
-          alt=""
+          src={fullSrc}
+          alt={altText}
           className={`rounded max-w-full ${outputclass === 'float' ? 'float-right ml-4 mb-2' : 'my-2'}`}
           style={width ? { width } : undefined}
         />
