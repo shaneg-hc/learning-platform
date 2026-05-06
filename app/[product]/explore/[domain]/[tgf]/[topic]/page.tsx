@@ -95,6 +95,11 @@ export default async function TopicPage({
       </header>
 
       <div className="px-8 py-8 max-w-3xl">
+        {node.shortdesc && (
+          <p className="mb-6 text-base text-gray-600 leading-relaxed border-l-4 border-[var(--brand-accent)] pl-4">
+            {node.shortdesc}
+          </p>
+        )}
         {node.body ? (
           <DitaRenderer body={node.body} />
         ) : (
