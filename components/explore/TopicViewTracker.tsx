@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 const MUTATION = `
   mutation MarkTopicViewed(
@@ -27,7 +27,12 @@ export default function TopicViewTracker({
   association: string;
   userId: string;
 }) {
+  const fired = useRef(false);
+
   useEffect(() => {
+    if (fired.current) return;
+    fired.current = true;
+
     const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8001/graphql';
 
     fetch(`${apiUrl}?association=${association}`, {
