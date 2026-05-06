@@ -23,6 +23,7 @@ const QUIZ_REPORT_QUERY = `
     userState(productSlug: $product) {
       quizPattern
       quizStatus
+      status
     }
   }
 `;
@@ -30,8 +31,28 @@ const QUIZ_REPORT_QUERY = `
 type QuizReportGroup = { name: string; title: string | null; quizNames: string[] };
 type QuizReportTGF   = { name: string; title: string | null; quizNames: string[]; groups: QuizReportGroup[] };
 type QuizReportDomain = { name: string; title: string | null; tgfs: QuizReportTGF[] };
-type QuizStatusEntry  = { data?: { percent?: number } };
-type QuizStatus = Record<string, QuizStatusEntry>;
+type QuizStatusEntry    = { data?: { percent?: number } };
+type QuizStatus         = Record<string, QuizStatusEntry>;
+type ReadStatusEntry    = { data?: { percent?: number; complete?: number; total?: number } };
+type ReadStatus         = Record<string, ReadStatusEntry>;
+
+function ReadingBadge({ name, readStatus }: { name: string; readStatus: ReadStatus }) {
+  const entry = readStatus[name];
+  const percent = entry?.data?.percent ?? 0;
+  const complete = entry?.data?.complete ?? 0;
+  const total = entry?.data?.total ?? 0;
+
+  if (!entry || percent === 0) return <span className="text-xs text-gray-300">—</span>;
+
+  const done = percent >= 100;
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+      done ? 'bg-green-100 text-green-700' : 'bg-blue-50 text-blue-600'
+    }`}>
+      {done ? `✓ ${total} topics` : `${complete} / ${total}`}
+    </span>
+  );
+}
 
 function QuizBadge({
   quizNames,
@@ -84,14 +105,15 @@ export default async function QuizzesPage({
 
   const data = await gql<{
     quizReport: QuizReportDomain[];
-    userState: { quizPattern: string | null; quizStatus: QuizStatus | null } | null;
+    userState: { quizPattern: string | null; quizStatus: QuizStatus | null; status: ReadStatus | null } | null;
   }>(QUIZ_REPORT_QUERY, { product }, association, user?.id);
 
   const domains = data.quizReport;
   const pattern = data.userState?.quizPattern ?? 'cp';
   const quizStatus: QuizStatus = (data.userState?.quizStatus as QuizStatus) ?? {};
+  const readStatus: ReadStatus = (data.userState?.status as ReadStatus) ?? {};
 
-  // Summary counts
+  // Quiz summary counts
   const allQuizNames = domains.flatMap((d) =>
     d.tgfs.flatMap((t) => [
       ...t.quizNames.filter((n) => n.endsWith(`-${pattern}`)),
@@ -101,6 +123,13 @@ export default async function QuizzesPage({
   const passedCount = allQuizNames.filter((n) => quizStatus[n]?.data?.percent === 100).length;
   const attemptedCount = allQuizNames.filter(
     (n) => quizStatus[n]?.data?.percent !== undefined && quizStatus[n]?.data?.percent !== 100,
+  ).length;
+
+  // Reading summary counts (TGF-level)
+  const allTgfNames = domains.flatMap((d) => d.tgfs.map((t) => t.name));
+  const tgfsComplete = allTgfNames.filter((n) => (readStatus[n]?.data?.percent ?? 0) >= 100).length;
+  const tgfsStarted = allTgfNames.filter(
+    (n) => (readStatus[n]?.data?.percent ?? 0) > 0 && (readStatus[n]?.data?.percent ?? 0) < 100,
   ).length;
 
   return (
@@ -115,11 +144,18 @@ export default async function QuizzesPage({
         >
           ← Explore
         </Link>
-        <h1 className="mt-3 text-3xl font-bold">Quiz Progress</h1>
-        <p className="mt-2 text-sm text-white/75">
-          {passedCount} of {allQuizNames.length} quizzes passed
-          {attemptedCount > 0 && ` · ${attemptedCount} in progress`}
-        </p>
+        <h1 className="mt-3 text-3xl font-bold">Progress</h1>
+        <div className="mt-2 flex flex-wrap gap-4 text-sm text-white/75">
+          <span>
+            {tgfsComplete} of {allTgfNames.length} topics read
+            {tgfsStarted > 0 && ` · ${tgfsStarted} in progress`}
+          </span>
+          <span className="text-white/40">·</span>
+          <span>
+            {passedCount} of {allQuizNames.length} quizzes passed
+            {attemptedCount > 0 && ` · ${attemptedCount} in progress`}
+          </span>
+        </div>
       </header>
 
       <div className="px-8 py-8 max-w-4xl space-y-10">
@@ -134,6 +170,7 @@ export default async function QuizzesPage({
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50 text-xs text-gray-500 uppercase tracking-wider">
                     <th className="px-5 py-2.5 text-left font-medium">Topic</th>
+                    <th className="px-5 py-2.5 text-right font-medium">Reading</th>
                     <th className="px-5 py-2.5 text-right font-medium">Quiz</th>
                   </tr>
                 </thead>
@@ -149,6 +186,9 @@ export default async function QuizzesPage({
                           >
                             {tgf.title ?? tgf.name}
                           </Link>
+                        </td>
+                        <td className="px-5 py-3 text-right">
+                          <ReadingBadge name={tgf.name} readStatus={readStatus} />
                         </td>
                         <td className="px-5 py-3 text-right">
                           {tgf.quizNames.length > 0 ? (
@@ -176,6 +216,9 @@ export default async function QuizzesPage({
                             >
                               {group.title ?? group.name}
                             </Link>
+                          </td>
+                          <td className="px-5 py-3 text-right">
+                            <ReadingBadge name={group.name} readStatus={readStatus} />
                           </td>
                           <td className="px-5 py-3 text-right">
                             {group.quizNames.length > 0 ? (
