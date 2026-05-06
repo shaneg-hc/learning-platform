@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import UserMenu from '@/components/UserMenu';
 import { currentUser } from '@clerk/nextjs/server';
@@ -74,6 +75,8 @@ const USER_STATE_QUERY = `
       examdate
       hideCountdown
       studyPlan
+      alwaysResume
+      location
     }
   }
 `;
@@ -107,7 +110,7 @@ export default async function ExplorePage({
       association,
       userId,
     ).catch(() => ({ toolCards: [] })),
-    gql<{ userState: { status: Record<string, { data: { percent: number; complete: number; total: number } }> | null; quizStatus: Record<string, unknown> | null; hasExam: boolean | null; examdate: string | null; hideCountdown: boolean | null; studyPlan: string[] | null } | null }>(
+    gql<{ userState: { status: Record<string, { data: { percent: number; complete: number; total: number } }> | null; quizStatus: Record<string, unknown> | null; hasExam: boolean | null; examdate: string | null; hideCountdown: boolean | null; studyPlan: string[] | null; alwaysResume: boolean | null; location: string | null } | null }>(
       USER_STATE_QUERY,
       { product },
       association,
@@ -132,6 +135,12 @@ export default async function ExplorePage({
   const hasExam = userStateData.userState?.hasExam ?? false;
   const examdate = userStateData.userState?.examdate ?? null;
   const hideCountdown = userStateData.userState?.hideCountdown ?? false;
+  const alwaysResume = userStateData.userState?.alwaysResume ?? false;
+  const lastLocation = userStateData.userState?.location ?? null;
+
+  if (alwaysResume && lastLocation && lastLocation !== '/explore') {
+    redirect(`/${product}${lastLocation}`);
+  }
   const initialPins = userStateData.userState?.studyPlan ?? [];
 
   // Dev-only: seed fake progress for the first TGF of each domain
