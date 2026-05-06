@@ -138,13 +138,15 @@ export default async function ExplorePage({
 
   return (
     <main className="min-h-screen bg-[var(--brand-background)]">
-      <header
-        className="px-8 py-10 text-white"
-        style={{ background: 'var(--brand-header-gradient)' }}
-      >
-        <h1 className="text-3xl font-bold">Explore</h1>
-        <p className="mt-1 text-sm text-white/75">Browse all learning domains</p>
-      </header>
+      {!hero && (
+        <header
+          className="px-8 py-10 text-white"
+          style={{ background: 'var(--brand-header-gradient)' }}
+        >
+          <h1 className="text-3xl font-bold">Explore</h1>
+          <p className="mt-1 text-sm text-white/75">Browse all learning domains</p>
+        </header>
+      )}
       <StudyPlanManager
         product={product}
         association={association}
