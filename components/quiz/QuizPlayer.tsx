@@ -31,6 +31,7 @@ export type QuizData = {
 
 type Answer = {
   questionContentId: number;
+  answerContentId: number;
   portalType: string;
   isCorrect: boolean;
   points: number;
@@ -86,6 +87,7 @@ export default function QuizPlayer({
       ...prev,
       {
         questionContentId: question.contentId,
+        answerContentId: choice?.contentId ?? 0,
         portalType: question.type,
         isCorrect,
         points: question.points,
